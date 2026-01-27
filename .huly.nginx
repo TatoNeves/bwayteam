@@ -1,21 +1,66 @@
+# Redirect HTTP to HTTPS
 server {
     listen 80;
-    server_name _;
+    server_name bwayteam.com www.bwayteam.com;
+    
+    location ^~ /.well-known/acme-challenge/ {
+        default_type "text/plain";
+        try_files $uri =404;
+        root /var/www/certbot;
+    }
+    
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+# HTTPS server
+server {
+    listen 443 ssl http2;
+    server_name bwayteam.com www.bwayteam.com;
     client_max_body_size 100M;
+
+    ssl_certificate /etc/letsencrypt/live/bwayteam.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/bwayteam.com/privkey.pem;
+    
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+    ssl_prefer_server_ciphers on;
+
+    # --- WebSockets (WSS) ---
+location ^~ /_transactor {
+      proxy_pass http://transactor:3333/;
+      proxy_http_version 1.1;
+      proxy_set_header Upgrade $http_upgrade;
+      proxy_set_header Connection "upgrade";
+      proxy_set_header Host $host;
+      proxy_set_header X-Forwarded-Proto https;
+      proxy_read_timeout 86400;
+      proxy_send_timeout 86400;
+    }
+location ^~ /_collaborator {
+      proxy_pass http://collaborator:3078/;
+      proxy_http_version 1.1;
+      proxy_set_header Upgrade $http_upgrade;
+      proxy_set_header Connection "upgrade";
+      proxy_set_header Host $host;
+      proxy_set_header X-Forwarded-Proto https;
+      proxy_read_timeout 86400;
+      proxy_send_timeout 86400;
+    }
 
     location / {
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Proto https;
         proxy_pass http://front:8080;
     }
-
     location /_accounts {
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Proto https;
 
         rewrite ^/_accounts(/.*)$ $1 break;
         proxy_pass http://account:3000/;
@@ -25,7 +70,7 @@ server {
     #    proxy_set_header Host $host;
     #    proxy_set_header X-Real-IP $remote_addr;
     #    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    #    proxy_set_header X-Forwarded-Proto $scheme;
+    #    proxy_set_header X-Forwarded-Proto https;
 
     #    proxy_http_version 1.1;
     #    proxy_set_header Upgrade $http_upgrade;
@@ -38,7 +83,7 @@ server {
     #    proxy_set_header Host $host;
     #    proxy_set_header X-Real-IP $remote_addr;
     #    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    #    proxy_set_header X-Forwarded-Proto $scheme;
+    #    proxy_set_header X-Forwarded-Proto https;
 
     #    proxy_http_version 1.1;
     #    proxy_set_header Upgrade $http_upgrade;
@@ -47,50 +92,23 @@ server {
     #    proxy_pass http://aibot:4010/;
     #}
 
-    #location /_love {
-    #    proxy_set_header Host $host;
-    #    proxy_set_header X-Real-IP $remote_addr;
-    #    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    #    proxy_set_header X-Forwarded-Proto $scheme;
-
-    #    proxy_http_version 1.1;
-    #    proxy_set_header Upgrade $http_upgrade;
-    #    proxy_set_header Connection "upgrade";
-    #    rewrite ^/_love(/.*)$ $1 break;
-    #    proxy_pass http://love:8096/;
-    #}
-
-    location /_collaborator {
+    location /_love {
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Proto https;
 
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";
-        rewrite ^/_collaborator(/.*)$ $1 break;
-        proxy_pass http://collaborator:3078/;
+        rewrite ^/_love(/.*)$ $1 break;
+        proxy_pass http://love:8096/;
     }
-
-    location /_transactor {
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-        rewrite ^/_transactor(/.*)$ $1 break;
-        proxy_pass http://transactor:3333/;
-    }
-
     location ~ ^/eyJ {
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Proto https;
         
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
@@ -102,7 +120,7 @@ server {
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Proto https;
 
         rewrite ^/_rekoni(/.*)$ $1 break;
         proxy_pass http://rekoni:4004/;
@@ -112,7 +130,7 @@ server {
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Proto https;
 
         rewrite ^/_stats(/.*)$ $1 break;
         proxy_pass http://stats:4900/;
@@ -122,7 +140,7 @@ server {
     #    proxy_set_header Host $host;
     #    proxy_set_header X-Real-IP $remote_addr;
     #    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    #    proxy_set_header X-Forwarded-Proto $scheme;
+    #    proxy_set_header X-Forwarded-Proto https;
     #
     #    rewrite ^/_telegram(/.*)$ $1 break;
     #    proxy_pass http://telegram-bot:4020/;
@@ -132,7 +150,7 @@ server {
     #    proxy_set_header Host $host;
     #    proxy_set_header X-Real-IP $remote_addr;
     #    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    #    proxy_set_header X-Forwarded-Proto $scheme;
+    #    proxy_set_header X-Forwarded-Proto https;
     #
     #    rewrite ^/_github(/.*)$ $1 break;
     #    proxy_pass http://github:3500/;

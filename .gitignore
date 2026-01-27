@@ -1,10 +1,27 @@
-letsencrypt/
-traefik/docker-compose.yaml
-nginx.conf
-nginx.conf.bak
-huly.conf
+# Dados sensíveis
+.env
 huly_v7.conf
-.huly.secret
-.cr.secret
-.rp.secret
-.idea
+*.key
+*.pem
+*.crt
+
+# Volumes Docker
+files/
+elastic/
+cr_data/
+cr_certs/
+redpanda/
+mongodb/
+
+# Logs e temporários
+logs/
+*.log
+tmp/
+.huly.nginx.bak*
+compose.yml.bak.*
+
+# Certificados Let's Encrypt (não subir!)
+/etc/letsencrypt/
+
+# Node modules se houver
+node_modules/
