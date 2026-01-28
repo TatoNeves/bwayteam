@@ -1,6 +1,6 @@
 # Dados sensíveis
 .env
-huly_v7.conf
+# huly_v7.conf - adicionado ao repo para facilitar deploy
 *.key
 *.pem
 *.crt
